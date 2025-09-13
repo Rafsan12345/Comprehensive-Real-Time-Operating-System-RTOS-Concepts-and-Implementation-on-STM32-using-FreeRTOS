@@ -1,0 +1,38 @@
+/* main.c - Binary Semaphore Example */
+#include "main.h"
+#include "cmsis_os2.h"
+
+osSemaphoreId_t binSem;
+
+void Task1(void *argument) {
+  for(;;) {
+    if(osSemaphoreAcquire(binSem, osWaitForever) == osOK) {
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13); // LED toggle
+      osDelay(200);
+    }
+  }
+}
+
+void Task2(void *argument) {
+  for(;;) {
+    osDelay(1000);
+    osSemaphoreRelease(binSem); // Release semaphore to Task1
+  }
+}
+
+int main(void) {
+  HAL_Init();
+  SystemClock_Config();
+  MX_GPIO_Init();
+
+  osKernelInitialize();
+
+  binSem = osSemaphoreNew(1, 0, NULL); // Binary semaphore, initial count = 0
+
+  osThreadNew(Task1, NULL, NULL);
+  osThreadNew(Task2, NULL, NULL);
+
+  osKernelStart();
+
+  while(1) {}
+}

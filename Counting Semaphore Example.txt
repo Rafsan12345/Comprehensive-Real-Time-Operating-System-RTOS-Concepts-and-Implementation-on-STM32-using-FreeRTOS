@@ -1,0 +1,39 @@
+/* main.c - Counting Semaphore Example */
+#include "main.h"
+#include "cmsis_os2.h"
+
+osSemaphoreId_t countSem;
+
+void ProducerTask(void *argument) {
+  for(;;) {
+    osDelay(500);
+    osSemaphoreRelease(countSem); // Increase semaphore count
+    printf("Produced Item\n");
+  }
+}
+
+void ConsumerTask(void *argument) {
+  for(;;) {
+    if(osSemaphoreAcquire(countSem, osWaitForever) == osOK) {
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13); // Process item (LED toggle)
+      printf("Consumed Item\n");
+    }
+  }
+}
+
+int main(void) {
+  HAL_Init();
+  SystemClock_Config();
+  MX_GPIO_Init();
+
+  osKernelInitialize();
+
+  countSem = osSemaphoreNew(5, 0, NULL); // Counting semaphore, max count=5, initial=0
+
+  osThreadNew(ProducerTask, NULL, NULL);
+  osThreadNew(ConsumerTask, NULL, NULL);
+
+  osKernelStart();
+
+  while(1) {}
+}
