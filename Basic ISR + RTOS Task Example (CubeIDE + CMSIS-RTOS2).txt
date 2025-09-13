@@ -1,0 +1,35 @@
+/* main.c - RTOS Interrupt Example */
+#include "main.h"
+#include "cmsis_os2.h"
+
+osSemaphoreId_t buttonSem;
+
+void EXTI0_IRQHandler(void) {
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0); // HAL EXTI handler
+
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  osSemaphoreRelease(buttonSem); // ISR থেকে semaphore release
+  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+void ButtonTask(void *argument) {
+  for(;;) {
+    osSemaphoreAcquire(buttonSem, osWaitForever); // Wait for ISR
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);       // Toggle LED
+  }
+}
+
+int main(void) {
+  HAL_Init();
+  SystemClock_Config();
+  MX_GPIO_Init();
+  MX_EXTI_Init();
+
+  buttonSem = osSemaphoreNew(1, 0, NULL); // Binary semaphore
+
+  osThreadNew(ButtonTask, NULL, NULL);
+
+  osKernelStart();
+
+  while(1) {}
+}
