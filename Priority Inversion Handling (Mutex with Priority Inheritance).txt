@@ -1,0 +1,38 @@
+/* main.c - Priority Inversion Handling Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+SemaphoreHandle_t mutex;
+
+void LowTask(void *argument) {
+  for(;;) {
+    if(xSemaphoreTake(mutex, portMAX_DELAY)) {
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+      osDelay(2000); // Simulate long work
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+      xSemaphoreGive(mutex);
+    }
+    osDelay(100);
+  }
+}
+void HighTask(void *argument) {
+  for(;;) {
+    if(xSemaphoreTake(mutex, portMAX_DELAY)) {
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+      xSemaphoreGive(mutex);
+    }
+    osDelay(500);
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  mutex = xSemaphoreCreateMutex(); // With priority inheritance
+
+  xTaskCreate(LowTask, "Low", 128, NULL, 1, NULL);
+  xTaskCreate(HighTask, "High", 128, NULL, 3, NULL);
+
+  osKernelStart();
+  while(1) {}
+}

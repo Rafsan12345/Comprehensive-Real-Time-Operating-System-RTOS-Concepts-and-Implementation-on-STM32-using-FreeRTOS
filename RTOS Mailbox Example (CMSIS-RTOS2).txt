@@ -1,0 +1,54 @@
+/* main.c - RTOS Mailbox Example */
+#include "main.h"
+#include "cmsis_os2.h"
+#include <string.h>
+
+typedef struct {
+  uint32_t id;
+  char msg[20];
+} MailType;
+
+osMailQId_t mailBoxId;
+MailType mailPool[4]; // Mail pool
+
+void SenderTask(void *argument) {
+  MailType *mail;
+  uint32_t count = 0;
+  for(;;) {
+    mail = osMailAlloc(mailBoxId, osWaitForever); // Allocate mail
+    mail->id = count;
+    sprintf(mail->msg, "Hello %lu", count++);
+    osMailPut(mailBoxId, mail); // Send mail
+    osDelay(1000);
+  }
+}
+
+void ReceiverTask(void *argument) {
+  osEvent evt;
+  MailType *mail;
+  for(;;) {
+    evt = osMailGet(mailBoxId, osWaitForever); // Receive mail
+    if(evt.status == osEventMail) {
+      mail = (MailType *)evt.value.p;
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13); // Indicate mail received
+      printf("Received Mail: ID=%lu, MSG=%s\n", mail->id, mail->msg);
+      osMailFree(mailBoxId, mail); // Free mail
+    }
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  osKernelInitialize();
+
+  osMailQDef(mailBox, 4, MailType);
+  mailBoxId = osMailCreate(osMailQ(mailBox), NULL);
+
+  osThreadNew(SenderTask, NULL, NULL);
+  osThreadNew(ReceiverTask, NULL, NULL);
+
+  osKernelStart();
+
+  while(1) {}
+}

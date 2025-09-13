@@ -1,0 +1,36 @@
+/* main.c - Mutex Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+SemaphoreHandle_t myMutex;
+
+void Task1(void *argument) {
+  for(;;) {
+    if(xSemaphoreTake(myMutex, portMAX_DELAY) == pdTRUE) {
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+      osDelay(200);
+      xSemaphoreGive(myMutex);
+    }
+  }
+}
+void Task2(void *argument) {
+  for(;;) {
+    if(xSemaphoreTake(myMutex, portMAX_DELAY) == pdTRUE) {
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+      osDelay(200);
+      xSemaphoreGive(myMutex);
+    }
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  myMutex = xSemaphoreCreateMutex();
+
+  xTaskCreate(Task1, "Task1", 128, NULL, 2, NULL);
+  xTaskCreate(Task2, "Task2", 128, NULL, 2, NULL);
+
+  osKernelStart();
+  while(1) {}
+}

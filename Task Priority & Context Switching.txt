@@ -1,0 +1,31 @@
+/* main.c - Task Priority Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+osThreadId highTaskHandle, lowTaskHandle;
+
+void HighTask(void const * argument) {
+  for(;;) {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+    osDelay(200);
+  }
+}
+void LowTask(void const * argument) {
+  for(;;) {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+    osDelay(200);
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  osThreadDef(HighTask, HighTask, osPriorityHigh, 0, 128);
+  highTaskHandle = osThreadCreate(osThread(HighTask), NULL);
+
+  osThreadDef(LowTask, LowTask, osPriorityLow, 0, 128);
+  lowTaskHandle = osThreadCreate(osThread(LowTask), NULL);
+
+  osKernelStart();
+  while (1) {}
+}

@@ -1,0 +1,24 @@
+/* main.c - Idle Task Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+void vApplicationIdleHook(void) {
+  __WFI(); // Enter low-power sleep
+}
+
+void Task(void const * argument) {
+  for(;;) {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    osDelay(500);
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  osThreadDef(Task, Task, osPriorityNormal, 0, 128);
+  osThreadCreate(osThread(Task), NULL);
+
+  osKernelStart();
+  while (1) {}
+}

@@ -1,0 +1,28 @@
+/* main.c - Recursive Mutex Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+SemaphoreHandle_t recMutex;
+
+void Task(void *argument) {
+  for(;;) {
+    if(xSemaphoreTakeRecursive(recMutex, portMAX_DELAY) == pdTRUE) {
+      if(xSemaphoreTakeRecursive(recMutex, portMAX_DELAY) == pdTRUE) {
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+        xSemaphoreGiveRecursive(recMutex);
+      }
+      xSemaphoreGiveRecursive(recMutex);
+    }
+    osDelay(500);
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  recMutex = xSemaphoreCreateRecursiveMutex();
+  xTaskCreate(Task, "Task", 128, NULL, 2, NULL);
+
+  osKernelStart();
+  while(1) {}
+}

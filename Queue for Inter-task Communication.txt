@@ -1,0 +1,38 @@
+/* main.c - Queue Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+osMessageQId queueHandle;
+
+void SenderTask(void const * argument) {
+  uint32_t count = 0;
+  for(;;) {
+    osMessagePut(queueHandle, count++, osWaitForever);
+    osDelay(500);
+  }
+}
+void ReceiverTask(void const * argument) {
+  osEvent evt;
+  for(;;) {
+    evt = osMessageGet(queueHandle, osWaitForever);
+    if(evt.status == osEventMessage) {
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    }
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  osMessageQDef(queue, 16, uint32_t);
+  queueHandle = osMessageCreate(osMessageQ(queue), NULL);
+
+  osThreadDef(Sender, SenderTask, osPriorityNormal, 0, 128);
+  osThreadCreate(osThread(Sender), NULL);
+
+  osThreadDef(Receiver, ReceiverTask, osPriorityNormal, 0, 128);
+  osThreadCreate(osThread(Receiver), NULL);
+
+  osKernelStart();
+  while (1) {}
+}

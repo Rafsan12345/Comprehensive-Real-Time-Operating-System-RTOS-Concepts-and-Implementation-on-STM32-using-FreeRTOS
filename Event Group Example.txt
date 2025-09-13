@@ -1,0 +1,33 @@
+/* main.c - Event Group Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+EventGroupHandle_t eventGroup;
+
+#define EVENT_BIT_1 (1 << 0)
+#define EVENT_BIT_2 (1 << 1)
+
+void TaskA(void *argument) {
+  for(;;) {
+    xEventGroupSetBits(eventGroup, EVENT_BIT_1);
+    osDelay(1000);
+  }
+}
+void TaskB(void *argument) {
+  for(;;) {
+    xEventGroupWaitBits(eventGroup, EVENT_BIT_1, pdTRUE, pdFALSE, portMAX_DELAY);
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  eventGroup = xEventGroupCreate();
+
+  xTaskCreate(TaskA, "TaskA", 128, NULL, 2, NULL);
+  xTaskCreate(TaskB, "TaskB", 128, NULL, 2, NULL);
+
+  osKernelStart();
+  while(1) {}
+}

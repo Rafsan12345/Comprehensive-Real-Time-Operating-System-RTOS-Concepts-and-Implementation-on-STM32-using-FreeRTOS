@@ -1,0 +1,19 @@
+/* main.c - Tickless Idle Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+void Task(void *argument) {
+  for(;;) {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    osDelay(2000); // Long delay triggers tickless sleep
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  xTaskCreate(Task, "Task", 128, NULL, 2, NULL);
+
+  osKernelStart(); // FreeRTOS configured with tickless idle in CubeMX
+  while(1) {}
+}

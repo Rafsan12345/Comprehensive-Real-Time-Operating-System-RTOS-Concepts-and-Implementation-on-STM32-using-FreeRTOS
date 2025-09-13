@@ -1,0 +1,21 @@
+/* main.c - Runtime Stats Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+char buffer[200];
+
+void Task(void *argument) {
+  for(;;) {
+    vTaskGetRunTimeStats(buffer); // Collect CPU usage
+    osDelay(1000);
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  xTaskCreate(Task, "Task", 128, NULL, 2, NULL);
+
+  osKernelStart();
+  while(1) {}
+}

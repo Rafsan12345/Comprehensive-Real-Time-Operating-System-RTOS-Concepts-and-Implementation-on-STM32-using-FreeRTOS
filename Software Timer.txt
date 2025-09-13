@@ -1,0 +1,20 @@
+/* main.c - Software Timer Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+osTimerId myTimerHandle;
+
+void TimerCallback(void const * argument) {
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  osTimerDef(myTimer, TimerCallback);
+  myTimerHandle = osTimerCreate(osTimer(myTimer), osTimerPeriodic, NULL);
+  osTimerStart(myTimerHandle, 1000);
+
+  osKernelStart();
+  while (1) {}
+}

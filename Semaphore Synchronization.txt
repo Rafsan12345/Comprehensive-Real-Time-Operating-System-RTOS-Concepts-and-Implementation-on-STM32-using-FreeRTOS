@@ -1,0 +1,34 @@
+/* main.c - Binary Semaphore Example */
+#include "main.h"
+#include "cmsis_os.h"
+
+osSemaphoreId mySemHandle;
+
+void Task1(void const * argument) {
+  for(;;) {
+    osSemaphoreWait(mySemHandle, osWaitForever);
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+  }
+}
+void Task2(void const * argument) {
+  for(;;) {
+    osDelay(1000);
+    osSemaphoreRelease(mySemHandle);
+  }
+}
+
+int main(void) {
+  HAL_Init(); SystemClock_Config(); MX_GPIO_Init();
+
+  osSemaphoreDef(mySem);
+  mySemHandle = osSemaphoreCreate(osSemaphore(mySem), 1);
+
+  osThreadDef(Task1, Task1, osPriorityNormal, 0, 128);
+  osThreadCreate(osThread(Task1), NULL);
+
+  osThreadDef(Task2, Task2, osPriorityNormal, 0, 128);
+  osThreadCreate(osThread(Task2), NULL);
+
+  osKernelStart();
+  while (1) {}
+}
